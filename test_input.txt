@@ -1,0 +1,15 @@
+Thorin
+Fighter
+n
+I look around the tavern
+I approach the hooded figure in the corner and ask his name
+state
+roll 20
+I try to persuade the bartender to give me free ale
+combat
+I attack the goblin that just walked in
+explore
+I search the room for hidden doors
+quests
+help
+quit

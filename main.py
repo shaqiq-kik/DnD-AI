@@ -63,6 +63,7 @@ def main():
             name = game_state.name
             loaded = True
 
+    tts_enabled = False
     if not loaded:
         # Character setup
         print("Welcome, adventurer. Before we begin, tell me about yourself.")
@@ -77,9 +78,9 @@ def main():
             
         game_state = GameState(name=name, char_class=char_class)
 
-    # TTS prompt
-    tts_input = input("Would you like to enable Text-to-Speech narration? (y/n) > ").strip().lower()
-    tts_enabled = tts_input == 'y'
+        # TTS prompt
+        tts_input = input("Would you like to enable Text-to-Speech narration? (y/n) > ").strip().lower()
+        tts_enabled = tts_input == 'y'
     
     # Instantiate DM Agent
     gm_agent = GMAgent()
