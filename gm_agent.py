@@ -60,12 +60,15 @@ class GMAgent:
             f"Provide your internal reasoning."
         )
         
-        response = ollama.chat(
-            model=self.model,
-            messages=[{"role": "user", "content": planning_prompt}]
-        )
-        
-        return response.get('message', {}).get('content', '')
+        try:
+            response = ollama.chat(
+                model=self.model,
+                messages=[{"role": "user", "content": planning_prompt}]
+            )
+            return response.get('message', {}).get('content', '')
+        except Exception as e:
+            print(f"\n[System Error] Planning LLM call failed: {e}")
+            return "Plan generation failed."
 
     def process_tool_call(self, tool_call) -> str:
         """
@@ -115,13 +118,16 @@ class GMAgent:
         temperature = 0.8 if scenario == "exploration" else 0.4
         
         # 3. Call LLM WITH tools (roll_for tool from tools.py)
-        response = ollama.chat(
-            model=self.model,
-            messages=self.messages,
-            tools=TOOLS_DEFINITION,
-            options={"temperature": temperature}
-        )
-        
+        try:
+            response = ollama.chat(
+                model=self.model,
+                messages=self.messages,
+                tools=TOOLS_DEFINITION,
+                options={"temperature": temperature}
+            )
+        except Exception as e:
+            return f"[System Error] Main LLM call failed: {e}"
+            
         message = response.get('message', {})
         self.messages.append(message)
         
@@ -137,13 +143,16 @@ class GMAgent:
                 })
                 
             # Request LLM to continue its response based on the tool result(s)
-            response = ollama.chat(
-                model=self.model,
-                messages=self.messages,
-                tools=TOOLS_DEFINITION,
-                options={"temperature": temperature}
-            )
-            message = response.get('message', {})
-            self.messages.append(message)
+            try:
+                response = ollama.chat(
+                    model=self.model,
+                    messages=self.messages,
+                    tools=TOOLS_DEFINITION,
+                    options={"temperature": temperature}
+                )
+                message = response.get('message', {})
+                self.messages.append(message)
+            except Exception as e:
+                return f"[System Error] Tool follow-up LLM call failed: {e}"
             
         return message.get('content', '')
