@@ -11,3 +11,4 @@ pydantic_core==2.41.5
 python-dotenv==1.2.2
 typing-inspection==0.4.2
 typing_extensions==4.15.0
+chromadb==0.5.23
