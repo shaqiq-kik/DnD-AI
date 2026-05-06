@@ -82,9 +82,6 @@ def narrate(text: str, enabled: bool = True):
     if enabled:
         narrator = Narrator()
         narrator.speak(text)
-    else:
-        # If disabled by the user, just print
-        print(f"[Narrator disabled]: {text}")
 
 
 # Simple test block that executes when the script is run directly

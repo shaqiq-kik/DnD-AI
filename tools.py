@@ -84,5 +84,22 @@ TOOLS_DEFINITION = [
                 "required": ["skill", "dc", "player"]
             }
         }
+    },
+    {
+        "type": "function",
+        "function": {
+            "name": "apply_damage",
+            "description": "Apply damage to the player character after an enemy attack",
+            "parameters": {
+                "type": "object",
+                "properties": {
+                    "amount": {
+                        "type": "integer",
+                        "description": "Amount of damage dealt"
+                    }
+                },
+                "required": ["amount"]
+            }
+        }
     }
 ]

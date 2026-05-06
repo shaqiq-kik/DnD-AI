@@ -1,5 +1,6 @@
 import os
 import sys
+import re
 from dotenv import load_dotenv
 
 # Import our custom modules
@@ -63,24 +64,23 @@ def main():
             name = game_state.name
             loaded = True
 
-    tts_enabled = False
     if not loaded:
         # Character setup
         print("Welcome, adventurer. Before we begin, tell me about yourself.")
         name = input("What is your character's name? > ").strip()
         char_class = input("What is your character's class? > ").strip()
-        
+
         # Fallbacks if user leaves input empty
         if not name:
             name = "Hero"
         if not char_class:
             char_class = "Fighter"
-            
+
         game_state = GameState(name=name, char_class=char_class)
 
-        # TTS prompt
-        tts_input = input("Would you like to enable Text-to-Speech narration? (y/n) > ").strip().lower()
-        tts_enabled = tts_input == 'y'
+    # TTS prompt (asked regardless of new/loaded session)
+    tts_input = input("Would you like to enable Text-to-Speech narration? (y/n) > ").strip().lower()
+    tts_enabled = tts_input == 'y'
     
     # Instantiate DM Agent
     gm_agent = GMAgent()
@@ -176,6 +176,18 @@ def main():
                 
             # Process the action through the agent
             response = gm_agent.respond_to_action(game_state, enriched_action, scenario=mode)
+            
+            # Check for DAMAGE signal
+            damage_match = re.search(r'DAMAGE:(\d+)', response)
+            if damage_match:
+                damage_amount = int(damage_match.group(1))
+                if hasattr(game_state, 'update_hp'):
+                    game_state.update_hp(-damage_amount)
+                else:
+                    game_state.hp = max(0, game_state.hp - damage_amount)
+                print(f"\n[System] {name} takes {damage_amount} damage! HP: {game_state.hp}/{game_state.max_hp}")
+                # Remove the signal from the response string before narrating/printing
+                response = response.replace(f"DAMAGE:{damage_amount}", "").strip()
             
             # Format and output the final response
             print_separator()

@@ -18,12 +18,10 @@ class GMAgent:
             "You are creative, engaging, and strictly adhere to the rules of D&D 5e. "
             "Keep your responses concise but descriptive. "
             "Address the player directly and resolve their actions based on your judgment. "
-            "You have access to exactly ONE tool: roll_for(skill, dc, player). "
-            "Use ONLY this tool when a dice roll is needed. Do NOT attempt to call "
-            "any other tools like 'attack', 'persuade', 'perception_check' or any "
-            "other tool names — they do not exist. For ALL skill checks, ability "
-            "checks, attack rolls, and saving throws, use roll_for() with the "
-            "appropriate skill name and DC. Never invent or call any other tool."
+            "You have access to exactly TWO tools:\n"
+            "1. roll_for(skill, dc, player) — use for ALL dice rolls and skill checks\n"
+            "2. apply_damage(amount) — use ONLY when an enemy successfully hits the "
+            "player and deals damage. Call this immediately after narrating the hit."
         )
 
         # Maintain conversation history across turns
@@ -130,20 +128,35 @@ class GMAgent:
             result = roll_for(skill=skill, dc=dc, player=player)
             print(f"  {result}")
             return result
+            
+        elif name == "apply_damage":
+            amount = args.get('amount', 0)
+            if isinstance(amount, dict):
+                amount = amount.get('value') or amount.get('amount') or 0
+            try:
+                amount = int(amount)
+            except (TypeError, ValueError):
+                amount = 0
+            # Accumulate damage so respond_to_action can signal main.py
+            self._pending_damage = getattr(self, '_pending_damage', 0) + amount
+            return f"DAMAGE:{amount}"
 
         return f"[Tool '{name}' not found.]"
 
     def respond_to_action(self, game_state, player_action, scenario="exploration"):
         """
         Main method to process a player's action.
-        
+
         Order of operations:
         1. _plan()  — chain-of-thought reasoning (hidden from player)
         2. Build enriched prompt with context + plan + action
         3. Call LLM WITH tools — may trigger roll_for
         4. Handle tool calls in a loop until final response
-        5. Return final response string
+        5. Return final response string (with DAMAGE:N appended if damage occurred)
         """
+        # Track damage from apply_damage tool calls so we can signal main.py
+        self._pending_damage = 0
+
         # Step 1 — Chain-of-thought planning (separate LLM call, player doesn't see this)
         plan = self._plan(player_action, game_state)
 
@@ -241,5 +254,11 @@ class GMAgent:
             "role": "assistant",
             "content": final_content
         })
+
+        # Append DAMAGE signal so main.py can update game_state.hp
+        pending = getattr(self, '_pending_damage', 0)
+        if pending > 0:
+            final_content += f" DAMAGE:{pending}"
+            self._pending_damage = 0
 
         return final_content
